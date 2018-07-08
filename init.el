@@ -343,11 +343,11 @@ you should place your code here."
       "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=no")
 ;; define the refile targets
   (defvar org-agenda-dir "" "gtd org files location")
-  (setq-default org-agenda-dir "~/org-notes")
-  (setq org-agenda-file-note (expand-file-name "notes.org" org-agenda-dir))
+  (setq-default org-agenda-dir "~/gtd")
+  (setq org-agenda-file-index (expand-file-name "index.org" org-agenda-dir))
   (setq org-agenda-file-gtd (expand-file-name "gtd.org" org-agenda-dir))
-  (setq org-agenda-file-journal (expand-file-name "journal.org" org-agenda-dir))
-  (setq org-agenda-file-code-snippet (expand-file-name "snippet.org" org-agenda-dir))
+  (setq org-agenda-file-someday (expand-file-name "someday.org" org-agenda-dir))
+  (setq org-agenda-file-tickler (expand-file-name "tickler.org" org-agenda-dir))
   (setq org-default-notes-file (expand-file-name "gtd.org" org-agenda-dir))
   (setq org-agenda-files (list org-agenda-dir))
 
