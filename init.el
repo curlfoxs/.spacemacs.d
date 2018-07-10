@@ -51,7 +51,11 @@ values."
      spell-checking
      syntax-checking
      ;; version-control
-
+     chinese
+       (colors :variables
+             colors-enable-rainbow-identifiers t
+             colors-enable-nyan-cat-progress-bar t)
+     dash
      
      )
    ;; List of additional packages that will be installed without being
@@ -255,7 +259,7 @@ values."
    ;; If non nil smooth scrolling (native-scrolling) is enabled. Smooth
    ;; scrolling overrides the default behavior of Emacs which recenters point
    ;; when it reaches the top or bottom of the screen. (default t)
-   dotspacemacs-smooth-scrolling t
+   dotspacemacs-smooth-scrolling nil
    ;; Control line numbers activation.
    ;; If set to `t' or `relative' line numbers are turned on in all `prog-mode' and
    ;; `text-mode' derivatives. If set to `relative', line numbers are relative.
@@ -269,7 +273,7 @@ values."
    ;;                       text-mode
    ;;   :size-limit-kb 1000)
    ;; (default nil)
-   dotspacemacs-line-numbers 'relative
+   dotspacemacs-line-numbers nil
    ;; Code folding method. Possible values are `evil' and `origami'.
    ;; (default 'evil)
    dotspacemacs-folding-method 'evil
@@ -300,7 +304,7 @@ values."
    ;; `trailing' to delete only the whitespace at end of lines, `changed'to
    ;; delete only whitespace for changed lines or `nil' to disable cleanup.
    ;; (default nil)
-   dotspacemacs-whitespace-cleanup nil
+   dotspacemacs-whitespace-cleanup 'changed
    ))
 
 (defun dotspacemacs/user-init ()
@@ -317,22 +321,25 @@ before packages are loaded. If you are unsure, you should try in setting them in
   )
 
 (defun dotspacemacs/user-config ()
-  "Configuration function for user code.
-This function is called at the very end of Spacemacs initialization after
-layers configuration.
-This is the place where most of your configurations should be done. Unless it is
-explicitly specified that a variable should be set before a package is loaded,
-you should place your code here."
-
-;; Set Chinese Font
-;; Put this inside `dotspacemacs/user-config()`
+;; 解决中文字体问题
 (if window-system
         (dolist (charset '(kana han cjk-misc bopomofo))
                 (set-fontset-font (frame-parameter nil 'font)
                         charset (font-spec :family "Noto Sans SC" :size 20))))
 
+;; 解决org表格里面中英文对齐的问题
+(when (configuration-layer/layer-usedp 'chinese)
+  (when (and (spacemacs/system-is-mac) window-system)
+    (spacemacs//set-monospaced-font "Source Code Pro" "Hiragino Sans GB" 14 16)))
+
+(fset 'evil-visual-update-x-selection 'ignore)
+
+(spacemacs|add-company-hook 'text-mode)
+
+(add-hook 'doc-view-mode-hook 'auto-revert-mode)
+
+
 ;; magithub使用
-;; Put this in inside `dotspacemacs/user-config()' 
 (use-package magithub
   :after magit
   ：config(magithub-feature-autoinject t))
@@ -343,24 +350,24 @@ you should place your code here."
       "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=no")
 ;; define the refile targets
   (defvar org-agenda-dir "" "gtd org files location")
-  (setq-default org-agenda-dir "~/gtd")
-  (setq org-agenda-file-index (expand-file-name "index.org" org-agenda-dir))
+  (setq-default org-agenda-dir "~/org-notes")
+  (setq org-agenda-file-note (expand-file-name "notes.org" org-agenda-dir))
   (setq org-agenda-file-gtd (expand-file-name "gtd.org" org-agenda-dir))
-  (setq org-agenda-file-someday (expand-file-name "someday.org" org-agenda-dir))
-  (setq org-agenda-file-tickler (expand-file-name "tickler.org" org-agenda-dir))
+  (setq org-agenda-file-aborted (expand-file-name "aborted.org" org-agenda-dir))
   (setq org-default-notes-file (expand-file-name "gtd.org" org-agenda-dir))
   (setq org-agenda-files (list org-agenda-dir))
 
+;; 绑定leader-key
+;;leader-key打开org-agenda-mode
+;;leader-key+P打开org-pomodoro
   (with-eval-after-load 'org-agenda
     (define-key org-agenda-mode-map (kbd "P") 'org-pomodoro)
     (spacemacs/set-leader-keys-for-major-mode 'org-agenda-mode
       "." 'spacemacs/org-agenda-transient-state/body)
     )
-  ;; the %i would copy the selected text into the template
-  ;;http://www.howardism.org/Technical/Emacs/journaling-org.html
-  ;;add multi-file journal
-  (setq org-capture-templates
-        '(("t" "Todo" entry (file+headline org-agenda-file-gtd "Workspace")
+;; 设置capture模版
+    (setq org-capture-templates
+        '(("t" "Todo" entry (file+headline org-agenda-file-gtd "In")
            "* TODO [#B] %?\n  %i\n"
            :empty-lines 1)
           ("n" "notes" entry (file+headline org-agenda-file-note "Quick notes")
@@ -369,25 +376,16 @@ you should place your code here."
           ("b" "Blog Ideas" entry (file+headline org-agenda-file-note "Blog Ideas")
            "* TODO [#B] %?\n  %i\n %U"
            :empty-lines 1)
-          ("s" "Code Snippet" entry
-           (file org-agenda-file-code-snippet)
-           "* %?\t%^g\n#+BEGIN_SRC %^{language}\n\n#+END_SRC")
-          ("w" "work" entry (file+headline org-agenda-file-gtd "Cocos2D-X")
-           "* TODO [#A] %?\n  %i\n %U"
-           :empty-lines 1)
           ("c" "Chrome" entry (file+headline org-agenda-file-note "Quick notes")
            "* TODO [#C] %?\n %(zilongshanren/retrieve-chrome-current-tab-url)\n %i\n %U"
            :empty-lines 1)
           ("l" "links" entry (file+headline org-agenda-file-note "Quick notes")
            "* TODO [#C] %?\n  %i\n %a \n %U"
-           :empty-lines 1)
-          ("j" "Journal Entry"
-           entry (file+datetree org-agenda-file-journal)
-           "* %?"
            :empty-lines 1)))
 
   ;;An entry without a cookie is treated just like priority ' B '.
   ;;So when create new task, they are default 重要且紧急
+  ;;查看分类归档
   (setq org-agenda-custom-commands
         '(
           ("w" . "任务安排")
@@ -396,12 +394,70 @@ you should place your code here."
           ("wc" "不重要且紧急的任务" tags-todo "+PRIORITY=\"C\"")
           ("b" "Blog" tags-todo "BLOG")
           ("p" . "项目安排")
-          ("pw" tags-todo "PROJECT+WORK+CATEGORY=\"cocos2d-x\"")
-          ("pl" tags-todo "PROJECT+DREAM+CATEGORY=\"zilongshanren\"")
+          ("pw" tags-todo "PROJECT+WORK+CATEGORY=\"zhongshan\"")
+          ("ps" tags-todo "PROJECT+DREAM+CATEGORY=\"godlight\"")
           ("W" "Weekly Review"
            ((stuck "") ;; review stuck projects as designated by org-stuck-projects
             (tags-todo "PROJECT") ;; review all projects (assuming you use todo keywords to designate projects)
+            (tags-todo "Daily")
+            (tags-todo "Weekly")
             ))))
+;;设置任务重定向
+  (setq org-refile-targets '((org-agenda-file-gtd :maxlevel  . 3)
+                             (org-agenda-file-aborted :level . 1)))
+;;为主要的Tags（情景）定义快捷键
+
+(setq org-tag-alist '(("WORK" . ?w)
+                      ("DREAM" . ?d)
+                      ("Weekly" . ?W)
+                      ("PROJECT" . ?p)
+                      ("Daily" . ?D)
+                      ("Monthly" . ?M)
+                      ("@home" . ?h)
+                      ("@school" . ?s)
+                      ("Emacs" . ?e)))
+
+
+;;任务的状态
+(setq org-todo-keywords
+      (quote ((sequence "TODO(t)" "STARTED(s)" "|" "DONE(d)")
+              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+(setq org-todo-keyword-faces
+      (quote (("TODO" :foreground "red" :weight bold)
+              ("STARTED" :foreground "blue" :weight bold)
+              ("DONE" :foreground "forest green" :weight bold)
+              ("WAITING" :foreground "orange" :weight bold)
+              ("HOLD" :foreground "magenta" :weight bold)
+              ("CANCELLED" :foreground "forest green" :weight bold)
+              ("MEETING" :foreground "forest green" :weight bold)
+              ("PHONE" :foreground "forest green" :weight bold))))
+;;完成所有子任务时，该任务自动切换成DONE状态
+(defun org-summary-todo (n-done n-not-done)
+  "Switch entry to DONE when all subentries are done, to TODO otherwise."
+  (let (org-log-done org-log-states)   ; turn off logging
+    (org-todo (if (= n-not-done 0) "DONE" "TODO"))))
+(add-hook 'org-after-todo-statistics-hook 'org-summary-todo)
+;;开启时钟时，任务自动切换成STARTED状态
+(defun set-todo-state-next ()
+  "Visit each parent task and change STARTED states to TODO"
+  (org-todo "STARTED"))
+(add-hook 'org-clock-in-hook 'set-todo-state-next 'append)
+
+;;子龙的clock配置
+(setq org-clock-mode-line-total 'current)
+    
+
+;; 1.当任务还有子任务未完成时，阻止任务从未完成状态到完成状态的改变
+;; 2.对基于 headline 的任务而言，若其上一级任务设置了 ":ORDERED:" 属性，则在其前面的同级任务完成前，无法被设置为完成状态
+;; 不过以上两种行为默认是被关闭的，如果要开启这些功能，要对变量 org-enforce-todo-dependencies 进行设置:
+(setq org-enforce-todo-dependencies t)
+;; Set default column view headings: Task Total-Time Time-Stamp
+(setq org-columns-default-format "%50ITEM(Task) %10CLOCKSUM %16TIMESTAMP_IA")
+
+;; 默认竖分频
+（setq split-height-threshold nil）
+（setq split-width-threshold 0 ）
+
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
 (custom-set-variables
@@ -409,10 +465,9 @@ you should place your code here."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(magit-push-arguments nil)
  '(package-selected-packages
    (quote
-    (magithub ghub+ apiwrap zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme exotica-theme espresso-theme dracula-theme django-theme darktooth-theme autothemer darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme editorconfig yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc cython-mode company-anaconda anaconda-mode pythonic unfill mwim mmm-mode markdown-toc markdown-mode helm-company helm-c-yasnippet gh-md fuzzy flyspell-correct-helm flyspell-correct flycheck-pos-tip pos-tip flycheck company-web web-completion-data company-statistics company auto-yasnippet yasnippet auto-dictionary ac-ispell auto-complete cdlatex auctex smeargle orgit magit-gitflow lua-mode helm-gitignore gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link evil-magit magit magit-popup git-commit ghub with-editor pyim pyim-basedict pangu-spacing org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download htmlize gnuplot find-by-pinyin-dired ace-pinyin pinyinlib web-mode tagedit slim-mode scss-mode sass-mode pug-mode helm-css-scss haml-mode emmet-mode ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile helm-mode-manager helm-make projectile pkg-info epl helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu highlight elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
+    (zeal-at-point rainbow-mode rainbow-identifiers pyim pyim-basedict pangu-spacing helm-dash find-by-pinyin-dired color-identifiers-mode ace-pinyin pinyinlib evil-ediff yapfify ws-butler winum which-key web-mode volatile-highlights vi-tilde-fringe uuidgen use-package unfill toc-org tagedit spaceline smeargle slim-mode scss-mode sass-mode restart-emacs rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el paradox orgit org-projectile org-present org-pomodoro org-mime org-download org-bullets open-junk-file neotree mwim move-text monokai-theme mmm-mode markdown-toc magithub magit-gitflow macrostep lorem-ipsum live-py-mode linum-relative link-hint indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md fuzzy flyspell-correct-helm flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-args evil-anzu eval-sexp-fu emmet-mode elisp-slime-nav editorconfig dumb-jump diminish define-word cython-mode company-web company-statistics company-anaconda column-enforce-mode clean-aindent-mode cdlatex auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile auctex aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
