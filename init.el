@@ -456,32 +456,6 @@ before packages are loaded. If you are unsure, you should try in setting them in
 ;; set git exec
 ;; 解决Error：searching for program no such file or directory ,git
  (setq exec-path (append exec-path '("C:/Program Files/Git/bin")))
-;; 默认竖分频(100为可设置值)
-;; github上有一段代码
-(defun display-new-buffer (buffer force-other-window)
-  "If BUFFER is visible, select it.
-If it's not visible and there's only one window, split the
-current window and select BUFFER in the new window. If the
-current window (before the split) is more than 100 columns wide,
-split horizontally(left/right), else split vertically(up/down).
-If the current buffer contains more than one window, select
-BUFFER in the least recently used window.
-This function returns the window which holds BUFFER.
-FORCE-OTHER-WINDOW is ignored."
-  (or (get-buffer-window buffer)
-    (if (one-window-p)
-        (let ((new-win
-               (if (> (window-width) 100)
-                   (split-window-horizontally)
-                 (split-window-vertically))))
-          (set-window-buffer new-win buffer)
-          new-win)
-      (let ((new-win (get-lru-window)))
-        (set-window-buffer new-win buffer)
-        new-win))))
-;; use display-buffer-alist instead of display-buffer-function if the following line won't work
-(setq display-buffer-function 'display-new-buffer)
-
 ;; 导出pdf，解决中文问题
 ;; 在你的.org文件最开始处加一行
 ;; #+LATEX_CLASS: ctexart
