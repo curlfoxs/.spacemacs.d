@@ -138,16 +138,16 @@ values."
    ;; List of themes, the first of the list is loaded when spacemacs starts.
    ;; Press <SPC> T n to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
-   dotspacemacs-themes '(
+   dotspacemacs-themes '(monokai
                          spacemacs-dark
-                         monokai
+
                          spacemacs-light)
    ;; If non nil the cursor color matches the state color in GUI Emacs.
    dotspacemacs-colorize-cursor-according-to-state t
    ;; Default font, or prioritized list of fonts. `powerline-scale' allows to
    ;; quickly tweak the mode-line size to make separators look not too crappy.
    dotspacemacs-default-font '("Source Code Pro"
-                               :size 21
+                               :size 19
                                :weight normal
                                :width normal
                                :powerline-scale 1.4)
@@ -273,7 +273,7 @@ values."
    ;;                       text-mode
    ;;   :size-limit-kb 1000)
    ;; (default nil)
-   dotspacemacs-line-numbers nil
+   dotspacemacs-line-numbers 'relative
    ;; Code folding method. Possible values are `evil' and `origami'.
    ;; (default 'evil)
    dotspacemacs-folding-method 'evil
@@ -283,7 +283,7 @@ values."
    ;; If non-nil pressing the closing parenthesis `)' key in insert mode passes
    ;; over any automatically added closing parenthesis, bracket, quote, etc…
    ;; This can be temporary disabled by pressing `C-q' before `)'. (default nil)
-   dotspacemacs-smart-closing-parenthesis nil
+   dotspacemacs-smart-closing-parenthesis 'nil
    ;; Select a scope to highlight delimiters. Possible values are `any',
    ;; `current', `all' or `nil'. Default is `all' (highlight any scope and
    ;; emphasis the current one). (default 'all)
@@ -315,11 +315,10 @@ executes.
 before packages are loaded. If you are unsure, you should try in setting them in
 `dotspacemacs/user-config' first."
 (setq configuration-layer--elpa-archives
-      '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
-        ("org-cn"   . "http://elpa.zilongshanren.com/org/")
-        ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))  
-  )
-
+      '(("melpa-cn" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("org-cn"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
+        ("gnu-cn"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")))
+)
 (defun dotspacemacs/user-config ()
 ;; 解决中文字体问题
 (if window-system
@@ -343,7 +342,7 @@ before packages are loaded. If you are unsure, you should try in setting them in
 (use-package magithub
   :after magit
   ：config(magithub-feature-autoinject t))
-  )
+  
 
 ;; ??关于什么的配置
 (setq tramp-ssh-controlmaster-options
@@ -501,6 +500,9 @@ FORCE-OTHER-WINDOW is ignored."
         \\usepackage{rotating}
          \\usepackage[colorlinks=true]{hyperref}
         \\tolerance=1000
+\\usepackage{geometry}
+\\geometry{a4paper, textwidth=6.5in, textheight=10in,
+            marginparsep=7pt, marginparwidth=.6in}
         [NO-DEFAULT-PACKAGES]
         [NO-PACKAGES]"
                ("\\section{%s}" . "\\section*{%s}")
@@ -509,6 +511,24 @@ FORCE-OTHER-WINDOW is ignored."
                ("\\paragraph{%s}" . "\\paragraph*{%s}")
                ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
 
+;; F4 to change task state
+(global-set-key (kbd"<f4>") 'org-todo)
+;; load theme
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
+;; hungry delete
+;; 在任何buff里面都激活：一键删除多余的空行
+(require `hungry-delete)
+(global-hungry-delete-mode)
+;; 自动添加括号
+;; (add-hook `emacs-lisp-mode-hook `smartparens-mode)
+(require `smartparens-config)
+(smartparens-global-mode t)
+
+(require 'golden-ratio)
+(golden-ratio-mode 1)
+
+
+)
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
 (custom-set-variables
@@ -518,7 +538,7 @@ FORCE-OTHER-WINDOW is ignored."
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (zeal-at-point rainbow-mode rainbow-identifiers pyim pyim-basedict pangu-spacing helm-dash find-by-pinyin-dired color-identifiers-mode ace-pinyin pinyinlib evil-ediff yapfify ws-butler winum which-key web-mode volatile-highlights vi-tilde-fringe uuidgen use-package unfill toc-org tagedit spaceline smeargle slim-mode scss-mode sass-mode restart-emacs rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el paradox orgit org-projectile org-present org-pomodoro org-mime org-download org-bullets open-junk-file neotree mwim move-text monokai-theme mmm-mode markdown-toc magithub magit-gitflow macrostep lorem-ipsum live-py-mode linum-relative link-hint indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md fuzzy flyspell-correct-helm flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-args evil-anzu eval-sexp-fu emmet-mode elisp-slime-nav editorconfig dumb-jump diminish define-word cython-mode company-web company-statistics company-anaconda column-enforce-mode clean-aindent-mode cdlatex auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile auctex aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))))
+    (evil-ediff))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
